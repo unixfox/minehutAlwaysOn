@@ -1,0 +1,6 @@
+[minehut]
+ip = "myserver.minehut.gg"
+
+[minecraft]
+username = "minecraftEmail"
+password = "minecraftPassword"

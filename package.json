@@ -1,0 +1,16 @@
+{
+  "name": "minehutalwayson",
+  "version": "0.1.0",
+  "description": "A program that keep your server always online on Minehut.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@iarna/toml": "^2.2.3",
+    "minecraft-protocol": "^1.9.4",
+    "prismarine-tokens": "^1.0.3"
+  }
+}
