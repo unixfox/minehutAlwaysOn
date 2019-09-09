@@ -2,6 +2,7 @@ const mc = require('minecraft-protocol')
 const tokens = require('prismarine-tokens');
 const fs = require('fs');
 const TOML = require('@iarna/toml');
+const dns = require('dns');
 
 function checkFileExist(path, exit) {
     if (fs.existsSync(path))
@@ -20,65 +21,68 @@ const configFile = TOML.parse(fs.readFileSync('./config.toml'));
 
 const reconnectInterval = 1000 * 60;
 
-const options = {
-    host: "play.minehut.gg",
-    port: 25565,
-    username: configFile["minecraft"].username,
-    password: configFile["minecraft"].password,
-    tokensLocation: './bot_tokens.json'
-};
+dns.resolve4('play.minehut.gg', function (err, addresses) {
+    
+    const options = {
+        host: addresses[0],
+        username: configFile["minecraft"].username,
+        password: configFile["minecraft"].password,
+        tokensLocation: './bot_tokens.json'
+    };
 
-function connect() {
-    tokens.use(options, function (_err, _opts) {
-        if (_err) throw _err;
-        const bot = mc.createClient(_opts);
-        main(bot);
-    });
-}
-
-connect();
-
-function parseChat(chatObj, parentState) {
-
-    if (typeof chatObj === 'string') {
-        return chatObj
-    } else {
-        let chat = ''
-
-        if ('text' in chatObj) {
-            chat += chatObj.text
-        }
-        if (chatObj.extra) {
-            chatObj.extra.forEach(function (item) {
-                chat += parseChat(item, parentState)
-            })
-        }
-        return chat
+    function connect() {
+        tokens.use(options, function (_err, _opts) {
+            if (_err) throw _err;
+            const bot = mc.createClient(_opts);
+            main(bot);
+        });
     }
-}
 
-function main(bot) {
-    bot.on('connect', function () {
-        console.info('connected')
-    });
+    connect();
 
-    bot.on('end', function () {
-        console.log('Connection lost');
-        setTimeout(connect, reconnectInterval);
-    });
 
-    bot.on('chat', function (packet) {
-        const j = JSON.parse(packet.message)
-        const chat = parseChat(j, {})
-        if (chat.includes("move to enable chat") || chat.includes("Your requested server is starting up") || chat.includes("Sending you to"))
+    function parseChat(chatObj, parentState) {
+
+        if (typeof chatObj === 'string') {
+            return chatObj
+        } else {
+            let chat = ''
+
+            if ('text' in chatObj) {
+                chat += chatObj.text
+            }
+            if (chatObj.extra) {
+                chatObj.extra.forEach(function (item) {
+                    chat += parseChat(item, parentState)
+                })
+            }
+            return chat
+        }
+    }
+
+    function main(bot) {
+        bot.on('connect', function () {
+            console.info('connected')
+        });
+
+        bot.on('end', function () {
+            console.log('Connection lost');
+            setTimeout(connect, reconnectInterval);
+        });
+
+        bot.on('chat', function (packet) {
+            const j = JSON.parse(packet.message)
+            const chat = parseChat(j, {})
+            if (chat.includes("move to enable chat") || chat.includes("Your requested server is starting up") || chat.includes("Sending you to"))
+                setTimeout(function () {
+                    bot.write('chat', { message: "/join " + configFile["minehut"].serverName });
+                }, Math.floor(Math.random() * 20000));
+        });
+
+        (['spawn', 'respawn']).forEach(event => bot.on(event, () => {
             setTimeout(function () {
                 bot.write('chat', { message: "/join " + configFile["minehut"].serverName });
             }, Math.floor(Math.random() * 20000));
-    });
-
-    (['spawn', 'respawn']).forEach(event => bot.on(event, () => {
-        setTimeout(function () {
-            bot.write('chat', { message: "/join " + configFile["minehut"].serverName });
-        }, Math.floor(Math.random() * 20000));
-    }));
-}
+        }));
+    }
+});
