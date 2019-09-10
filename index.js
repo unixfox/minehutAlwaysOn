@@ -3,6 +3,9 @@ const tokens = require('prismarine-tokens');
 const fs = require('fs');
 const TOML = require('@iarna/toml');
 const dns = require('dns');
+require('better-logging')(console, {
+    format: ctx => `${ctx.date} ${ctx.time24} ${ctx.type} ${ctx.msg}`
+});
 
 function checkFileExist(path, exit) {
     if (fs.existsSync(path))
@@ -62,17 +65,18 @@ dns.resolve4('play.minehut.gg', function (err, addresses) {
 
     function main(bot) {
         bot.on('connect', function () {
-            console.info('connected')
+            console.info('Connected to the minehut main server.');
         });
 
         bot.on('end', function () {
-            console.log('Connection lost');
+            console.warn('Connection lost with the minehut server, reconnecting...');
             setTimeout(connect, reconnectInterval);
         });
 
         bot.on('chat', function (packet) {
-            const j = JSON.parse(packet.message)
-            const chat = parseChat(j, {})
+            const j = JSON.parse(packet.message);
+            const chat = parseChat(j, {});
+            console.log(chat);
             if (chat.includes("move to enable chat") || chat.includes("Your requested server is starting up") || chat.includes("Sending you to"))
                 setTimeout(function () {
                     bot.write('chat', { message: "/join " + configFile["minehut"].serverName });
