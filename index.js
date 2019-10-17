@@ -1,26 +1,9 @@
 const mc = require('minecraft-protocol')
 const tokens = require('prismarine-tokens');
-const fs = require('fs');
-const TOML = require('@iarna/toml');
 const dns = require('dns');
 require('better-logging')(console, {
     format: ctx => `${ctx.date} ${ctx.time24} ${ctx.type} ${ctx.msg}`
 });
-
-function checkFileExist(path, exit) {
-    if (fs.existsSync(path))
-        return (true);
-    else
-        if (exit) {
-            console.error("The file " + path + " doesn't exist, can't continue. Please check the documentation for further details.");
-            process.exit(1);
-        }
-        else
-            return (false);
-}
-
-checkFileExist("config.toml", true);
-const configFile = TOML.parse(fs.readFileSync('./config.toml'));
 
 const reconnectInterval = 1000 * 60;
 
@@ -28,8 +11,8 @@ dns.resolve4('play.minehut.gg', function (err, addresses) {
     
     const options = {
         host: addresses[0],
-        username: configFile["minecraft"].username,
-        password: configFile["minecraft"].password,
+        username: process.env.USERNAME,
+        password: process.env.PASSWORD,
         tokensLocation: './bot_tokens.json'
     };
 
@@ -79,13 +62,13 @@ dns.resolve4('play.minehut.gg', function (err, addresses) {
             console.log(chat);
             if (chat.includes("move to enable chat") || chat.includes("Your requested server is starting up") || chat.includes("Sending you to"))
                 setTimeout(function () {
-                    bot.write('chat', { message: "/join " + configFile["minehut"].serverName });
+                    bot.write('chat', { message: "/join " + process.env.SERVER_NAME });
                 }, Math.floor(Math.random() * 20000));
         });
 
         (['spawn', 'respawn']).forEach(event => bot.on(event, () => {
             setTimeout(function () {
-                bot.write('chat', { message: "/join " + configFile["minehut"].serverName });
+                bot.write('chat', { message: "/join " + process.env.SERVER_NAME });
             }, Math.floor(Math.random() * 20000));
         }));
     }
